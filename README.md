@@ -10,4 +10,3 @@ with e-mail addresses for each domain.
 * Tests should pass.
 * Performance matters (this is only ~3k lines, but could be 1m lines or run on a small machine).
 * You are free to refactor/create anything the demonstrates how you build code.
-# teamwork
