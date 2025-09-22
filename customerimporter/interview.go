@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 )
@@ -23,6 +24,12 @@ type DomainData struct {
 
 type CustomerImporter struct {
 	path *string
+}
+
+var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
+
+func IsEmail(s string) bool {
+	return emailRegex.MatchString(s)
 }
 
 // NewCustomerImporter returns a new CustomerImporter that reads from file at specified path.
@@ -53,7 +60,7 @@ func (ci CustomerImporter) ImportDomainData() ([]DomainData, error) {
 			return nil, readErr
 		}
 		email, domain, found := strings.Cut(line[2], "@")
-		if email == "" || !found {
+		if email == "" || !found || IsEmail(email) {
 			return nil, fmt.Errorf("error invalid email address: %s", line[2])
 		}
 		data[domain] += 1
