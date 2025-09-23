@@ -10,7 +10,7 @@ import (
 	"cmp"
 	"encoding/csv"
 	"fmt"
-	. "helpers"
+	"helpers"
 	"io"
 	"os"
 	"slices"
@@ -54,7 +54,7 @@ func (ci CustomerImporter) ImportDomainData() ([]DomainData, error) {
 			return nil, readErr
 		}
 		email, domain, found := strings.Cut(line[2], "@")
-		if email == "" || !found || IsEmail(email) {
+		if email == "" || !found || helpers.IsEmail(email) {
 			return nil, fmt.Errorf("error invalid email address: %s", line[2])
 		}
 		data[domain] += 1
