@@ -31,12 +31,19 @@ func worker(jobs <-chan []string, results chan<- string, wg *sync.WaitGroup) {
 		if len(line) < 3 {
 			continue
 		}
-		email, domain, found := strings.Cut(line[2], "@")
-		if email == "" || !found || helpers.IsEmail(email) {
-			// skip invalid emails; logging would be better
+
+		addr := strings.TrimSpace(line[2])
+		// validate full address email
+		if !helpers.IsEmail(addr) {
 			continue
 		}
-		results <- domain
+
+		_, domain, found := strings.Cut(addr, "@")
+		if !found || domain == "" {
+			continue
+		}
+
+		results <- strings.ToLower(domain)
 	}
 }
 
