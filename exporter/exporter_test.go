@@ -2,13 +2,13 @@ package exporter
 
 import (
 	"fmt"
-	"importer/customerimporter"
+	. "importer"
 	"testing"
 )
 
 func TestExportData(t *testing.T) {
 	path := "./test_output.csv"
-	data := []customerimporter.DomainData{
+	data := []DomainData{
 		{
 			Domain:           "livejournal.com",
 			CustomerQuantity: 12,
@@ -42,7 +42,7 @@ func TestExportInvalidPath(t *testing.T) {
 	path := ""
 	exporter := NewCustomerExporter(&path)
 
-	err := exporter.ExportData([]customerimporter.DomainData{})
+	err := exporter.ExportData([]DomainData{})
 	if err == nil {
 		t.Fatal(err)
 	}
@@ -65,7 +65,7 @@ func BenchmarkImportDomainData(b *testing.B) {
 	dir := b.TempDir()
 	path := fmt.Sprintf("%s/test_output.csv", dir)
 	dataPath := "../customerimporter/benchmark10k.csv"
-	importer := customerimporter.NewCustomerImporter(&dataPath)
+	importer := NewCustomerImporter(&dataPath)
 	data, err := importer.ImportDomainData()
 	if err != nil {
 		b.Error(err)

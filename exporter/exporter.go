@@ -3,7 +3,7 @@ package exporter
 import (
 	"encoding/csv"
 	"fmt"
-	"importer/customerimporter"
+	. "importer"
 	"io"
 	"os"
 	"strconv"
@@ -22,7 +22,7 @@ func NewCustomerExporter(outputPath *string) *CustomerExporter {
 
 // ExportData writes sorted customer domain data to a CSV file. If file already exists, it will
 // be truncated.
-func (ex CustomerExporter) ExportData(data []customerimporter.DomainData) error {
+func (ex CustomerExporter) ExportData(data []DomainData) error {
 	if data == nil {
 		return fmt.Errorf("error provided data is empty (nil)")
 	}
@@ -34,7 +34,7 @@ func (ex CustomerExporter) ExportData(data []customerimporter.DomainData) error 
 	return exportCsv(data, outputFile)
 }
 
-func exportCsv(data []customerimporter.DomainData, output io.Writer) error {
+func exportCsv(data []DomainData, output io.Writer) error {
 	headers := []string{"domain", "number_of_customers"}
 	csvWriter := csv.NewWriter(output)
 	defer func() error {

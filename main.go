@@ -4,8 +4,8 @@ import (
 	"flag"
 	"fmt"
 
-	"importer/customerimporter"
-	"importer/exporter"
+	"exporter"
+	. "importer"
 	"log/slog"
 )
 
@@ -24,7 +24,7 @@ func readOptions() *Options {
 
 func main() {
 	opts := readOptions()
-	importer := customerimporter.NewCustomerImporter(opts.path)
+	importer := NewCustomerImporter(opts.path)
 	data, err := importer.ImportDomainData()
 	if err != nil {
 		slog.Error("error importing customer data: ", err)
@@ -40,7 +40,7 @@ func main() {
 	}
 }
 
-func printData(data []customerimporter.DomainData) {
+func printData(data []DomainData) {
 	fmt.Println("domain,number_of_customers")
 	for _, v := range data {
 		fmt.Printf("%s,%v\n", v.Domain, v.CustomerQuantity)
