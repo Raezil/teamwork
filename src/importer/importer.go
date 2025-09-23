@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"slices"
-	"strings"
 	"sync"
 )
 
@@ -24,29 +23,6 @@ func NewCustomerImporter(filePath *string) *CustomerImporter {
 	return &CustomerImporter{path: filePath}
 }
 
-// worker reads email lines from jobs, extracts domain, and sends results to results channel
-func worker(jobs <-chan []string, results chan<- string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for line := range jobs {
-		if len(line) < 3 {
-			continue
-		}
-
-		addr := strings.TrimSpace(line[2])
-		// validate full address email
-		if !helpers.IsEmail(addr) {
-			continue
-		}
-
-		_, domain, found := strings.Cut(addr, "@")
-		if !found || domain == "" {
-			continue
-		}
-
-		results <- strings.ToLower(domain)
-	}
-}
-
 func (ci CustomerImporter) ImportData(csvReader *csv.Reader) (map[string]uint64, error) {
 	data := make(map[string]uint64)
 	jobs := make(chan []string, 1000) // buffered channel for input lines
@@ -56,7 +32,7 @@ func (ci CustomerImporter) ImportData(csvReader *csv.Reader) (map[string]uint64,
 	numWorkers := 8 // tune based on CPU cores and workload
 	wg.Add(numWorkers)
 	for i := 0; i < numWorkers; i++ {
-		go worker(jobs, results, &wg)
+		go helpers.Worker(jobs, results, &wg)
 	}
 
 	// collector goroutine: aggregate domains
