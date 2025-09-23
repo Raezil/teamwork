@@ -4,15 +4,15 @@
 // CLI and output the sorted domains to the terminal or to a file. Any errors
 // should be logged (or handled). Performance matters (this is only ~3k lines,
 // but could be 1m lines or run on a small machine).
-package customerimporter
+package importer
 
 import (
 	"cmp"
 	"encoding/csv"
 	"fmt"
+	. "helpers"
 	"io"
 	"os"
-	"regexp"
 	"slices"
 	"strings"
 )
@@ -24,12 +24,6 @@ type DomainData struct {
 
 type CustomerImporter struct {
 	path *string
-}
-
-var emailRegex = regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
-
-func IsEmail(s string) bool {
-	return emailRegex.MatchString(s)
 }
 
 // NewCustomerImporter returns a new CustomerImporter that reads from file at specified path.

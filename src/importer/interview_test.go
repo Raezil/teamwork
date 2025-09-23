@@ -1,4 +1,4 @@
-package customerimporter
+package importer
 
 import "testing"
 
