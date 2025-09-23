@@ -33,17 +33,9 @@ func NewCustomerImporter(filePath *string) *CustomerImporter {
 	}
 }
 
-// ImportDomainData reads and returns sorted customer domain data from CSV file.
-func (ci CustomerImporter) ImportDomainData() ([]DomainData, error) {
-	file, err := os.Open(*ci.path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	csvReader := csv.NewReader(file)
+func (ci CustomerImporter) ImportData(csvReader *csv.Reader) (map[string]uint64, error) {
 	data := make(map[string]uint64)
 
-	// skip first line with headers
 	line, readErr := csvReader.Read()
 	if readErr != nil {
 		fmt.Println(line, readErr)
@@ -58,6 +50,21 @@ func (ci CustomerImporter) ImportDomainData() ([]DomainData, error) {
 			return nil, fmt.Errorf("error invalid email address: %s", line[2])
 		}
 		data[domain] += 1
+	}
+	return data, nil
+}
+
+// ImportDomainData reads and returns sorted customer domain data from CSV file.
+func (ci CustomerImporter) ImportDomainData() ([]DomainData, error) {
+	file, err := os.Open(*ci.path)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	csvReader := csv.NewReader(file)
+	data, err := ci.ImportData(csvReader)
+	if err != nil {
+		return nil, err
 	}
 	domainData := make([]DomainData, 0, len(data))
 	for k, v := range data {
