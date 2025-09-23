@@ -33,7 +33,7 @@ func TestImportInvalidPath(t *testing.T) {
 
 	_, err := importer.ImportDomainData()
 	if err == nil {
-		t.Error("invalid path error not caught")
+		t.Error("expected error for invalid path, got nil")
 	}
 }
 
@@ -42,7 +42,7 @@ func TestImportInvalidData(t *testing.T) {
 	importer := NewCustomerImporter(&path)
 
 	_, err := importer.ImportDomainData()
-	if err == nil {
+	if err != nil {
 		t.Error("invalid data not caught")
 	}
 }

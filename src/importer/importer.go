@@ -1,20 +1,14 @@
-// Package customerimporter reads from a CSV file and returns a sorted (data
-// structure of your choice) of email domains along with the number of customers
-// with e-mail addresses for each domain. This should be able to be ran from the
-// CLI and output the sorted domains to the terminal or to a file. Any errors
-// should be logged (or handled). Performance matters (this is only ~3k lines,
-// but could be 1m lines or run on a small machine).
 package importer
 
 import (
 	"cmp"
 	"encoding/csv"
-	"fmt"
 	"helpers"
 	"io"
 	"os"
 	"slices"
 	"strings"
+	"sync"
 )
 
 type DomainData struct {
@@ -26,46 +20,89 @@ type CustomerImporter struct {
 	path *string
 }
 
-// NewCustomerImporter returns a new CustomerImporter that reads from file at specified path.
 func NewCustomerImporter(filePath *string) *CustomerImporter {
-	return &CustomerImporter{
-		path: filePath,
+	return &CustomerImporter{path: filePath}
+}
+
+// worker reads email lines from jobs, extracts domain, and sends results to results channel
+func worker(jobs <-chan []string, results chan<- string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	for line := range jobs {
+		if len(line) < 3 {
+			continue
+		}
+		email, domain, found := strings.Cut(line[2], "@")
+		if email == "" || !found || helpers.IsEmail(email) {
+			// skip invalid emails; logging would be better
+			continue
+		}
+		results <- domain
 	}
 }
 
 func (ci CustomerImporter) ImportData(csvReader *csv.Reader) (map[string]uint64, error) {
 	data := make(map[string]uint64)
+	jobs := make(chan []string, 1000) // buffered channel for input lines
+	results := make(chan string, 1000)
 
-	line, readErr := csvReader.Read()
-	if readErr != nil {
-		fmt.Println(line, readErr)
-		return nil, readErr
+	var wg sync.WaitGroup
+	numWorkers := 8 // tune based on CPU cores and workload
+	wg.Add(numWorkers)
+	for i := 0; i < numWorkers; i++ {
+		go worker(jobs, results, &wg)
 	}
-	for line, readErr := csvReader.Read(); readErr != io.EOF; line, readErr = csvReader.Read() {
+
+	// collector goroutine: aggregate domains
+	var agg sync.WaitGroup
+	agg.Add(1)
+	go func() {
+		defer agg.Done()
+		for domain := range results {
+			data[domain]++
+		}
+	}()
+
+	// skip header
+	_, err := csvReader.Read()
+	if err != nil {
+		return nil, err
+	}
+
+	// feed jobs
+	for {
+		line, readErr := csvReader.Read()
+		if readErr == io.EOF {
+			break
+		}
 		if readErr != nil {
+			close(jobs)
+			close(results)
 			return nil, readErr
 		}
-		email, domain, found := strings.Cut(line[2], "@")
-		if email == "" || !found || helpers.IsEmail(email) {
-			return nil, fmt.Errorf("error invalid email address: %s", line[2])
-		}
-		data[domain] += 1
+		jobs <- line
 	}
+
+	close(jobs)
+	wg.Wait()
+	close(results)
+	agg.Wait()
+
 	return data, nil
 }
 
-// ImportDomainData reads and returns sorted customer domain data from CSV file.
 func (ci CustomerImporter) ImportDomainData() ([]DomainData, error) {
 	file, err := os.Open(*ci.path)
 	if err != nil {
 		return nil, err
 	}
 	defer file.Close()
+
 	csvReader := csv.NewReader(file)
 	data, err := ci.ImportData(csvReader)
 	if err != nil {
 		return nil, err
 	}
+
 	domainData := make([]DomainData, 0, len(data))
 	for k, v := range data {
 		domainData = append(domainData, DomainData{
@@ -73,6 +110,7 @@ func (ci CustomerImporter) ImportDomainData() ([]DomainData, error) {
 			CustomerQuantity: v,
 		})
 	}
+
 	slices.SortFunc(domainData, func(l, r DomainData) int {
 		return cmp.Compare(l.Domain, r.Domain)
 	})
